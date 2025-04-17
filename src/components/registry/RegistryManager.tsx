@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ShoppingBag, Link2, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { ShoppingBag, Link2, ExternalLink, Plus, Trash2, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,6 +69,8 @@ const RegistryManager = () => {
   const [registries, setRegistries] = useState(sampleRegistries);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRegistry, setNewRegistry] = useState({ name: '', url: '' });
+  const [paymentLinks, setPaymentLinks] = useState({ venmo: '', cashapp: '' });
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
   const { toast } = useToast();
   
   const handleAddRegistry = () => {
@@ -112,6 +114,24 @@ const RegistryManager = () => {
     });
   };
   
+  const handleSavePaymentLinks = () => {
+    // Validate Venmo username (should start with @)
+    if (paymentLinks.venmo && !paymentLinks.venmo.startsWith('@')) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Venmo",
+        description: "Venmo username should start with @",
+      });
+      return;
+    }
+    
+    toast({
+      title: "Payment Links Saved",
+      description: "Your payment links have been successfully saved.",
+    });
+    setShowPaymentForm(false);
+  };
+  
   const getPriorityClass = (priority: string) => {
     switch(priority) {
       case 'high':
@@ -129,13 +149,66 @@ const RegistryManager = () => {
     <div className="animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <h2 className="section-heading">Registry Manager</h2>
-        {!showAddForm && (
-          <Button onClick={() => setShowAddForm(true)} className="mt-2 sm:mt-0">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Registry
-          </Button>
-        )}
+        <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
+          {!showAddForm && !showPaymentForm && (
+            <>
+              <Button onClick={() => setShowPaymentForm(true)} className="flex items-center" variant="outline">
+                <DollarSign className="h-4 w-4 mr-2" />
+                Payment Links
+              </Button>
+              <Button onClick={() => setShowAddForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Registry
+              </Button>
+            </>
+          )}
+        </div>
       </div>
+
+      {showPaymentForm && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Payment Links</CardTitle>
+            <CardDescription>Add your Venmo and CashApp usernames for gift contributions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="venmo" className="block text-sm font-medium text-neutral-dark mb-1">
+                  Venmo Username
+                </label>
+                <Input 
+                  id="venmo" 
+                  placeholder="@your-venmo-username" 
+                  value={paymentLinks.venmo}
+                  onChange={(e) => setPaymentLinks({...paymentLinks, venmo: e.target.value})}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter your Venmo username starting with @
+                </p>
+              </div>
+              <div>
+                <label htmlFor="cashapp" className="block text-sm font-medium text-neutral-dark mb-1">
+                  CashApp Username
+                </label>
+                <Input 
+                  id="cashapp" 
+                  placeholder="$your-cashapp-username" 
+                  value={paymentLinks.cashapp}
+                  onChange={(e) => setPaymentLinks({...paymentLinks, cashapp: e.target.value})}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter your CashApp username starting with $
+                </p>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button variant="outline" onClick={() => setShowPaymentForm(false)}>Cancel</Button>
+            <Button onClick={handleSavePaymentLinks}>Save Payment Links</Button>
+          </CardFooter>
+        </Card>
+      )}
 
       {showAddForm && (
         <Card className="mb-6">
@@ -172,6 +245,70 @@ const RegistryManager = () => {
           <CardFooter className="flex justify-between">
             <Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button>
             <Button onClick={handleAddRegistry}>Add Registry</Button>
+          </CardFooter>
+        </Card>
+      )}
+
+      {/* Payment Links Display */}
+      {(paymentLinks.venmo || paymentLinks.cashapp) && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Payment Links</CardTitle>
+            <CardDescription>Alternative gift options</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {paymentLinks.venmo && (
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <div className="bg-[#3D95CE] text-white p-1 rounded mr-2">
+                      <span className="font-bold">V</span>
+                    </div>
+                    <span>Venmo: {paymentLinks.venmo}</span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs"
+                    asChild
+                  >
+                    <a href={`https://venmo.com/${paymentLinks.venmo.substring(1)}`} target="_blank" rel="noopener noreferrer">
+                      Send <ExternalLink className="h-3 w-3 ml-1" />
+                    </a>
+                  </Button>
+                </div>
+              )}
+              {paymentLinks.cashapp && (
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <div className="bg-[#00D632] text-white p-1 rounded mr-2">
+                      <span className="font-bold">$</span>
+                    </div>
+                    <span>CashApp: {paymentLinks.cashapp}</span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs"
+                    asChild
+                  >
+                    <a href={`https://cash.app/${paymentLinks.cashapp}`} target="_blank" rel="noopener noreferrer">
+                      Send <ExternalLink className="h-3 w-3 ml-1" />
+                    </a>
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-xs"
+              onClick={() => setShowPaymentForm(true)}
+            >
+              Edit Payment Links
+            </Button>
           </CardFooter>
         </Card>
       )}
