@@ -6,7 +6,7 @@ import PregnancyTracker from '@/components/tracker/PregnancyTracker';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       <Navbar />
       <main className="flex-grow app-container py-4">
         <PregnancyTracker />

@@ -53,15 +53,16 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// Updated color palette for gender-neutral design
 				dadblue: {
-					DEFAULT: '#2563eb',
-					light: '#60a5fa',
-					dark: '#1e40af',
+					DEFAULT: '#78a15d', // Changed to a green tone
+					light: '#9bc17f',
+					dark: '#5c7e47',
 				},
 				neutral: {
-					DEFAULT: '#94a3b8',
-					light: '#e2e8f0',
-					dark: '#334155',
+					DEFAULT: '#c8b49d', // Changed to a tan tone
+					light: '#e8d9c8',
+					dark: '#a48e73',
 				},
 			},
 			borderRadius: {

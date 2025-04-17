@@ -4,7 +4,7 @@ import { Baby } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="bg-white border-t mt-auto">
+    <footer className="bg-card border-t mt-auto">
       <div className="app-container py-6">
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div className="flex items-center mb-4 md:mb-0">
@@ -12,7 +12,7 @@ const Footer = () => {
             <span className="text-lg font-bold text-dadblue">DadPrep</span>
           </div>
           
-          <div className="text-sm text-neutral">
+          <div className="text-sm text-muted-foreground">
             <p>© {new Date().getFullYear()} DadPrep. All rights reserved.</p>
           </div>
         </div>
