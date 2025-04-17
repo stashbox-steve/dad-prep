@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   CalendarCheck, 
@@ -20,7 +19,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
-// Baby size comparisons with images
 const babySizeComparisons = {
   1: { item: "Poppy seed", image: "🌱" },
   2: { item: "Sesame seed", image: "🌱" },
@@ -68,14 +66,12 @@ const PregnancyTracker = () => {
   const { user } = useUser();
   const { toast } = useToast();
   const [dueDate, setDueDate] = useState<Date | null>(
-    // Default due date for demo purposes: 7 months from now
     new Date(new Date().setMonth(new Date().getMonth() + 7))
   );
-  const [currentWeek, setCurrentWeek] = useState(12); // Default to week 12 for demo
+  const [currentWeek, setCurrentWeek] = useState(12);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [notes, setNotes] = useState<string>("");
 
-  // Load user data when component mounts
   useEffect(() => {
     if (user) {
       const savedData = localStorage.getItem(`pregnancy-data-${user.email}`);
@@ -92,7 +88,6 @@ const PregnancyTracker = () => {
     }
   }, [user]);
 
-  // Save data when it changes
   useEffect(() => {
     if (user) {
       const dataToSave = {
@@ -124,13 +119,11 @@ const PregnancyTracker = () => {
       setDueDate(date);
       setIsDatePickerOpen(false);
       
-      // Calculate current week based on due date
       const today = new Date();
       const daysUntilDue = Math.floor((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       const weeksRemaining = Math.floor(daysUntilDue / 7);
       const estimatedCurrentWeek = 40 - weeksRemaining;
       
-      // Set current week between 1-40 range
       setCurrentWeek(Math.max(1, Math.min(40, estimatedCurrentWeek)));
       
       toast({
@@ -308,11 +301,10 @@ const PregnancyTracker = () => {
             <CardDescription>Keep track of important information, questions for your healthcare provider, or anything else.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Input
-              as="textarea"
+            <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="min-h-[120px] resize-y"
+              className="min-h-[120px] resize-y w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
               placeholder="Write your notes here..."
             />
           </CardContent>
