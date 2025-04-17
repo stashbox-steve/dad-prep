@@ -1,17 +1,24 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CalendarCheck, 
   ChevronRight, 
   ChevronLeft,
   Baby,
   Heart,
-  Scale
+  Scale,
+  Calendar
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import WeeklyInfo from './WeeklyInfo';
+import { useUser } from '@/contexts/UserContext';
+import { useToast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 // Baby size comparisons with images
 const babySizeComparisons = {
@@ -58,11 +65,44 @@ const babySizeComparisons = {
 };
 
 const PregnancyTracker = () => {
+  const { user } = useUser();
+  const { toast } = useToast();
   const [dueDate, setDueDate] = useState<Date | null>(
     // Default due date for demo purposes: 7 months from now
     new Date(new Date().setMonth(new Date().getMonth() + 7))
   );
   const [currentWeek, setCurrentWeek] = useState(12); // Default to week 12 for demo
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [notes, setNotes] = useState<string>("");
+
+  // Load user data when component mounts
+  useEffect(() => {
+    if (user) {
+      const savedData = localStorage.getItem(`pregnancy-data-${user.email}`);
+      if (savedData) {
+        try {
+          const parsedData = JSON.parse(savedData);
+          if (parsedData.dueDate) setDueDate(new Date(parsedData.dueDate));
+          if (parsedData.currentWeek) setCurrentWeek(parsedData.currentWeek);
+          if (parsedData.notes) setNotes(parsedData.notes);
+        } catch (error) {
+          console.error('Error parsing saved data', error);
+        }
+      }
+    }
+  }, [user]);
+
+  // Save data when it changes
+  useEffect(() => {
+    if (user) {
+      const dataToSave = {
+        dueDate: dueDate?.toISOString(),
+        currentWeek,
+        notes
+      };
+      localStorage.setItem(`pregnancy-data-${user.email}`, JSON.stringify(dataToSave));
+    }
+  }, [dueDate, currentWeek, notes, user]);
 
   const totalWeeks = 40;
   const progress = Math.round((currentWeek / totalWeeks) * 100);
@@ -79,6 +119,34 @@ const PregnancyTracker = () => {
     }
   };
 
+  const handleDueDateChange = (date: Date | undefined) => {
+    if (date) {
+      setDueDate(date);
+      setIsDatePickerOpen(false);
+      
+      // Calculate current week based on due date
+      const today = new Date();
+      const daysUntilDue = Math.floor((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const weeksRemaining = Math.floor(daysUntilDue / 7);
+      const estimatedCurrentWeek = 40 - weeksRemaining;
+      
+      // Set current week between 1-40 range
+      setCurrentWeek(Math.max(1, Math.min(40, estimatedCurrentWeek)));
+      
+      toast({
+        title: "Due date updated",
+        description: `Your due date has been set to ${format(date, 'PPP')}.`,
+      });
+    }
+  };
+
+  const handleSaveNotes = () => {
+    toast({
+      title: "Notes saved",
+      description: "Your pregnancy notes have been saved.",
+    });
+  };
+
   const formatDate = (date: Date | null) => {
     if (!date) return 'Not set';
     return new Intl.DateTimeFormat('en-US', { 
@@ -90,21 +158,6 @@ const PregnancyTracker = () => {
 
   const getFormattedDateRange = () => {
     if (!dueDate) return '';
-    
-    // Calculate expected dates for trimester milestones based on due date
-    // 40 weeks is full term, so we work backwards from due date
-    const fullTermDate = new Date(dueDate);
-    
-    // First trimester: weeks 1-12 (first day to week 12)
-    // Second trimester: weeks 13-26
-    // Third trimester: weeks 27-40 (birth)
-    
-    const thirdTrimesterStart = new Date(fullTermDate);
-    thirdTrimesterStart.setDate(thirdTrimesterStart.getDate() - (13 * 7)); // 13 weeks before due date
-    
-    const secondTrimesterStart = new Date(fullTermDate);
-    secondTrimesterStart.setDate(secondTrimesterStart.getDate() - (27 * 7)); // 27 weeks before due date
-    
     return `Due date: ${formatDate(dueDate)}`;
   };
 
@@ -135,7 +188,25 @@ const PregnancyTracker = () => {
     <div className="animate-fade-in">
       <div className="mb-6">
         <h2 className="section-heading">Pregnancy Tracker</h2>
-        <p className="text-muted-foreground mb-4">{getFormattedDateRange()}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-muted-foreground">{getFormattedDateRange()}</p>
+          <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="ml-auto">
+                <Calendar className="mr-2 h-4 w-4" />
+                Change Due Date
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <CalendarComponent
+                mode="single"
+                selected={dueDate || undefined}
+                onSelect={handleDueDateChange}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
       
       <Card className="mb-6">
@@ -229,6 +300,27 @@ const PregnancyTracker = () => {
           </CardContent>
         </Card>
       </div>
+
+      {user && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-dadblue">My Pregnancy Notes</CardTitle>
+            <CardDescription>Keep track of important information, questions for your healthcare provider, or anything else.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Input
+              as="textarea"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="min-h-[120px] resize-y"
+              placeholder="Write your notes here..."
+            />
+          </CardContent>
+          <CardFooter>
+            <Button onClick={handleSaveNotes}>Save Notes</Button>
+          </CardFooter>
+        </Card>
+      )}
 
       <WeeklyInfo currentWeek={currentWeek} />
     </div>

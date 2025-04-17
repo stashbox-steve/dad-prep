@@ -10,28 +10,33 @@ import Meals from "./pages/Meals";
 import Names from "./pages/Names";
 import Registry from "./pages/Registry";
 import DadJokes from "./pages/DadJokes";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import { UserProvider } from "./contexts/UserContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <ThemeProvider defaultTheme="system" storageKey="dadprep-theme">
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/meals" element={<Meals />} />
-            <Route path="/names" element={<Names />} />
-            <Route path="/registry" element={<Registry />} />
-            <Route path="/dad-jokes" element={<DadJokes />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <UserProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/meals" element={<Meals />} />
+              <Route path="/names" element={<Names />} />
+              <Route path="/registry" element={<Registry />} />
+              <Route path="/dad-jokes" element={<DadJokes />} />
+              <Route path="/auth" element={<Auth />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </UserProvider>
     </QueryClientProvider>
   </ThemeProvider>
 );

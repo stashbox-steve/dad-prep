@@ -1,386 +1,478 @@
 
-import React, { useState } from 'react';
-import { ShoppingBag, Link2, ExternalLink, Plus, Trash2, DollarSign } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/components/ui/use-toast';
+import React, { useState, useEffect } from 'react';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/components/ui/use-toast";
+import { useUser } from '@/contexts/UserContext';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { AlertCircle, ExternalLink, Link as LinkIcon } from "lucide-react";
+import { Link } from 'react-router-dom';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const sampleRegistries = [
-  {
-    id: 1,
-    name: "Amazon Baby Registry",
-    url: "https://www.amazon.com",
-    items: 42
+const defaultItems = [
+  { 
+    id: '1', 
+    name: 'Baby Car Seat', 
+    price: 179.99, 
+    priority: 'Essential',
+    status: 'Needed',
+    category: 'Travel'
   },
-  {
-    id: 2,
-    name: "Target Baby Registry",
-    url: "https://www.target.com",
-    items: 28
-  }
+  { 
+    id: '2', 
+    name: 'Convertible Crib', 
+    price: 299.00, 
+    priority: 'Essential',
+    status: 'Needed',
+    category: 'Nursery'
+  },
+  { 
+    id: '3', 
+    name: 'Baby Monitor', 
+    price: 149.95, 
+    priority: 'High',
+    status: 'Needed',
+    category: 'Safety'
+  },
 ];
 
-const sampleEssentials = [
-  {
-    category: "Sleep",
-    items: [
-      { name: "Crib", priority: "high" },
-      { name: "Crib mattress", priority: "high" },
-      { name: "Fitted crib sheets", priority: "medium" },
-      { name: "Baby monitor", priority: "high" },
-      { name: "Swaddles", priority: "medium" }
-    ]
-  },
-  {
-    category: "Feeding",
-    items: [
-      { name: "Bottles", priority: "high" },
-      { name: "Bottle brush", priority: "medium" },
-      { name: "Nursing pillow", priority: "medium" },
-      { name: "Burp cloths", priority: "high" },
-      { name: "High chair", priority: "low" }
-    ]
-  },
-  {
-    category: "Clothing",
-    items: [
-      { name: "Onesies (0-3 months)", priority: "high" },
-      { name: "Sleep sacks", priority: "medium" },
-      { name: "Socks", priority: "medium" },
-      { name: "Hats", priority: "medium" },
-      { name: "Seasonal outerwear", priority: "low" }
-    ]
-  },
-  {
-    category: "Diapering",
-    items: [
-      { name: "Diapers", priority: "high" },
-      { name: "Wipes", priority: "high" },
-      { name: "Changing pad", priority: "medium" },
-      { name: "Diaper bag", priority: "medium" },
-      { name: "Diaper cream", priority: "medium" }
-    ]
-  }
-];
+type PaymentLinks = {
+  venmo?: string;
+  cashApp?: string;
+};
 
 const RegistryManager = () => {
-  const [registries, setRegistries] = useState(sampleRegistries);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newRegistry, setNewRegistry] = useState({ name: '', url: '' });
-  const [paymentLinks, setPaymentLinks] = useState({ venmo: '', cashapp: '' });
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const { user } = useUser();
   const { toast } = useToast();
+  const [items, setItems] = useState(defaultItems);
+  const [newItem, setNewItem] = useState({ name: '', price: '', priority: 'Medium', category: 'Other' });
+  const [editItem, setEditItem] = useState(null);
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [paymentLinks, setPaymentLinks] = useState<PaymentLinks>({});
+  const [venmoUsername, setVenmoUsername] = useState("");
+  const [cashAppUsername, setCashAppUsername] = useState("");
   
-  const handleAddRegistry = () => {
-    if (!newRegistry.name || !newRegistry.url) {
+  // Load saved registry data
+  useEffect(() => {
+    if (user) {
+      const savedItems = localStorage.getItem(`registry-items-${user.email}`);
+      const savedLinks = localStorage.getItem(`payment-links-${user.email}`);
+      
+      if (savedItems) {
+        try {
+          setItems(JSON.parse(savedItems));
+        } catch (error) {
+          console.error('Error parsing saved items', error);
+        }
+      }
+      
+      if (savedLinks) {
+        try {
+          const links = JSON.parse(savedLinks);
+          setPaymentLinks(links);
+          setVenmoUsername(links.venmo || "");
+          setCashAppUsername(links.cashApp || "");
+        } catch (error) {
+          console.error('Error parsing payment links', error);
+        }
+      }
+    }
+  }, [user]);
+  
+  // Save registry items when they change
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(`registry-items-${user.email}`, JSON.stringify(items));
+    }
+  }, [items, user]);
+
+  const handleAddItem = () => {
+    if (!newItem.name || !newItem.price) {
       toast({
+        title: "Missing information",
+        description: "Please provide both name and price for the item.",
         variant: "destructive",
-        title: "Error",
-        description: "Please fill in all fields.",
       });
       return;
     }
-    
-    // Ensure URL has http/https prefix
-    let url = newRegistry.url;
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      url = 'https://' + url;
+
+    const price = parseFloat(newItem.price);
+    if (isNaN(price)) {
+      toast({
+        title: "Invalid price",
+        description: "Please enter a valid price.",
+        variant: "destructive",
+      });
+      return;
     }
-    
-    const newItem = {
-      id: Date.now(),
-      name: newRegistry.name,
-      url,
-      items: 0
+
+    const item = {
+      id: Date.now().toString(),
+      name: newItem.name,
+      price: price,
+      priority: newItem.priority,
+      status: 'Needed',
+      category: newItem.category
     };
-    
-    setRegistries([...registries, newItem]);
-    setNewRegistry({ name: '', url: '' });
-    setShowAddForm(false);
+
+    setItems([...items, item]);
+    setNewItem({ name: '', price: '', priority: 'Medium', category: 'Other' });
+    setIsAddingItem(false);
     
     toast({
-      title: "Registry Added",
-      description: "Your registry has been successfully added.",
+      title: "Item added",
+      description: `${item.name} has been added to your registry.`,
     });
   };
-  
-  const handleRemoveRegistry = (id: number) => {
-    setRegistries(registries.filter(reg => reg.id !== id));
-    toast({
-      title: "Registry Removed",
-      description: "Your registry has been removed.",
-    });
-  };
-  
+
   const handleSavePaymentLinks = () => {
-    // Validate Venmo username (should start with @)
-    if (paymentLinks.venmo && !paymentLinks.venmo.startsWith('@')) {
+    // Validate Venmo username if provided
+    if (venmoUsername && !venmoUsername.startsWith('@')) {
       toast({
+        title: "Invalid Venmo username",
+        description: "Venmo usernames must start with @",
         variant: "destructive",
-        title: "Invalid Venmo",
-        description: "Venmo username should start with @",
       });
       return;
     }
     
-    toast({
-      title: "Payment Links Saved",
-      description: "Your payment links have been successfully saved.",
-    });
-    setShowPaymentForm(false);
-  };
-  
-  const getPriorityClass = (priority: string) => {
-    switch(priority) {
-      case 'high':
-        return 'bg-red-100 text-red-700';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'low':
-        return 'bg-green-100 text-green-700';
-      default:
-        return 'bg-neutral-light text-neutral-dark';
+    const links: PaymentLinks = {};
+    
+    if (venmoUsername) links.venmo = venmoUsername;
+    if (cashAppUsername) links.cashApp = cashAppUsername;
+    
+    setPaymentLinks(links);
+    
+    if (user) {
+      localStorage.setItem(`payment-links-${user.email}`, JSON.stringify(links));
     }
+    
+    setIsPaymentDialogOpen(false);
+    
+    toast({
+      title: "Payment links saved",
+      description: "Your payment links have been updated.",
+    });
+  };
+
+  const handleMarkAsReceived = (id: string) => {
+    const updatedItems = items.map(item => 
+      item.id === id ? { ...item, status: 'Received' } : item
+    );
+    setItems(updatedItems);
+    toast({
+      title: "Item updated",
+      description: "Item marked as received.",
+    });
+  };
+
+  const handleDeleteItem = (id: string) => {
+    const filteredItems = items.filter(item => item.id !== id);
+    setItems(filteredItems);
+    toast({
+      title: "Item removed",
+      description: "Item has been removed from your registry.",
+    });
+  };
+
+  const renderItems = (status: string) => {
+    const filteredItems = items.filter(item => item.status === status);
+    
+    if (filteredItems.length === 0) {
+      return (
+        <div className="text-center p-6 text-muted-foreground">
+          No items found
+        </div>
+      );
+    }
+    
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {filteredItems.map(item => (
+          <Card key={item.id} className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">{item.name}</CardTitle>
+              <CardDescription>
+                ${item.price.toFixed(2)} · {item.category} · Priority: {item.priority}
+              </CardDescription>
+            </CardHeader>
+            <CardFooter>
+              <div className="flex justify-between w-full">
+                {status === 'Needed' ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleMarkAsReceived(item.id)}
+                  >
+                    Mark Received
+                  </Button>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Received</span>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => handleDeleteItem(item.id)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  Remove
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  const renderPaymentLinks = () => {
+    if (!paymentLinks.venmo && !paymentLinks.cashApp) {
+      return (
+        <p className="text-sm text-muted-foreground">
+          No payment links have been added. Click the button below to add your Venmo or Cash App info.
+        </p>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {paymentLinks.venmo && (
+          <div className="flex items-center gap-2">
+            <LinkIcon className="h-4 w-4 text-dadblue" />
+            <span>Venmo: </span>
+            <a 
+              href={`https://venmo.com/${paymentLinks.venmo.substring(1)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-dadblue hover:underline flex items-center gap-1"
+            >
+              {paymentLinks.venmo}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        )}
+        {paymentLinks.cashApp && (
+          <div className="flex items-center gap-2">
+            <LinkIcon className="h-4 w-4 text-dadblue" />
+            <span>Cash App: </span>
+            <a 
+              href={`https://cash.app/${cashAppUsername}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-dadblue hover:underline flex items-center gap-1"
+            >
+              ${paymentLinks.cashApp}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
     <div className="animate-fade-in">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h2 className="section-heading">Registry Manager</h2>
-        <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
-          {!showAddForm && !showPaymentForm && (
-            <>
-              <Button onClick={() => setShowPaymentForm(true)} className="flex items-center" variant="outline">
-                <DollarSign className="h-4 w-4 mr-2" />
-                Payment Links
-              </Button>
-              <Button onClick={() => setShowAddForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Registry
-              </Button>
-            </>
-          )}
-        </div>
+      <div className="mb-6">
+        <h2 className="section-heading">Baby Registry</h2>
+        <p className="text-muted-foreground mb-4">Keep track of what you need for your new arrival</p>
       </div>
-
-      {showPaymentForm && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Payment Links</CardTitle>
-            <CardDescription>Add your Venmo and CashApp usernames for gift contributions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="venmo" className="block text-sm font-medium text-neutral-dark mb-1">
-                  Venmo Username
-                </label>
-                <Input 
-                  id="venmo" 
-                  placeholder="@your-venmo-username" 
-                  value={paymentLinks.venmo}
-                  onChange={(e) => setPaymentLinks({...paymentLinks, venmo: e.target.value})}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Enter your Venmo username starting with @
-                </p>
-              </div>
-              <div>
-                <label htmlFor="cashapp" className="block text-sm font-medium text-neutral-dark mb-1">
-                  CashApp Username
-                </label>
-                <Input 
-                  id="cashapp" 
-                  placeholder="$your-cashapp-username" 
-                  value={paymentLinks.cashapp}
-                  onChange={(e) => setPaymentLinks({...paymentLinks, cashapp: e.target.value})}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Enter your CashApp username starting with $
-                </p>
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={() => setShowPaymentForm(false)}>Cancel</Button>
-            <Button onClick={handleSavePaymentLinks}>Save Payment Links</Button>
-          </CardFooter>
-        </Card>
-      )}
-
-      {showAddForm && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Add New Registry</CardTitle>
-            <CardDescription>Link your existing baby registry</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="registry-name" className="block text-sm font-medium text-neutral-dark mb-1">
-                  Registry Name
-                </label>
-                <Input 
-                  id="registry-name" 
-                  placeholder="e.g. Amazon Baby Registry" 
-                  value={newRegistry.name}
-                  onChange={(e) => setNewRegistry({...newRegistry, name: e.target.value})}
-                />
-              </div>
-              <div>
-                <label htmlFor="registry-url" className="block text-sm font-medium text-neutral-dark mb-1">
-                  Registry URL
-                </label>
-                <Input 
-                  id="registry-url" 
-                  placeholder="e.g. https://www.amazon.com/baby-reg/..." 
-                  value={newRegistry.url}
-                  onChange={(e) => setNewRegistry({...newRegistry, url: e.target.value})}
-                />
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button>
-            <Button onClick={handleAddRegistry}>Add Registry</Button>
-          </CardFooter>
-        </Card>
-      )}
-
-      {/* Payment Links Display */}
-      {(paymentLinks.venmo || paymentLinks.cashapp) && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Payment Links</CardTitle>
-            <CardDescription>Alternative gift options</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {paymentLinks.venmo && (
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <div className="bg-[#3D95CE] text-white p-1 rounded mr-2">
-                      <span className="font-bold">V</span>
-                    </div>
-                    <span>Venmo: {paymentLinks.venmo}</span>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-xs"
-                    asChild
-                  >
-                    <a href={`https://venmo.com/${paymentLinks.venmo.substring(1)}`} target="_blank" rel="noopener noreferrer">
-                      Send <ExternalLink className="h-3 w-3 ml-1" />
-                    </a>
-                  </Button>
-                </div>
-              )}
-              {paymentLinks.cashapp && (
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <div className="bg-[#00D632] text-white p-1 rounded mr-2">
-                      <span className="font-bold">$</span>
-                    </div>
-                    <span>CashApp: {paymentLinks.cashapp}</span>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-xs"
-                    asChild
-                  >
-                    <a href={`https://cash.app/${paymentLinks.cashapp}`} target="_blank" rel="noopener noreferrer">
-                      Send <ExternalLink className="h-3 w-3 ml-1" />
-                    </a>
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-xs"
-              onClick={() => setShowPaymentForm(true)}
-            >
-              Edit Payment Links
-            </Button>
-          </CardFooter>
-        </Card>
-      )}
-
-      {/* Linked Registries */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        {registries.map(registry => (
-          <Card key={registry.id} className="card-hover">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg">{registry.name}</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-neutral hover:text-destructive"
-                  onClick={() => handleRemoveRegistry(registry.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <CardDescription className="flex items-center">
-                <Link2 className="h-3 w-3 mr-1" />
-                <span className="truncate">{registry.url}</span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-neutral-dark">{registry.items} items</span>
-                <Button variant="outline" size="sm" className="text-xs" asChild>
-                  <a href={registry.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                    Visit <ExternalLink className="h-3 w-3 ml-1" />
-                  </a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Registry Essentials */}
-      <h3 className="text-xl font-semibold text-dadblue-dark mb-4">Registry Essentials Checklist</h3>
       
-      <div className="space-y-6">
-        {sampleEssentials.map((category) => (
-          <Card key={category.category}>
-            <CardHeader>
-              <CardTitle>{category.category}</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <ul className="space-y-2">
-                {category.items.map((item, idx) => (
-                  <li key={idx} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <input 
-                        type="checkbox" 
-                        id={`${category.category}-${idx}`}
-                        className="h-4 w-4 rounded border-neutral"
-                      />
-                      <label htmlFor={`${category.category}-${idx}`} className="ml-3 text-sm">
-                        {item.name}
-                      </label>
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${getPriorityClass(item.priority)}`}>
-                      {item.priority}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {!user && (
+        <Alert className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Sign in to save your registry</AlertTitle>
+          <AlertDescription>
+            <p className="mb-2">Create an account to save your registry items across devices.</p>
+            <Link to="/auth">
+              <Button variant="outline" size="sm">Sign In or Register</Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Registry Items</CardTitle>
+              <CardDescription>Track everything you need for baby</CardDescription>
+            </div>
+            <div>
+              <Button onClick={() => setIsAddingItem(!isAddingItem)}>
+                {isAddingItem ? 'Cancel' : 'Add Item'}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isAddingItem && (
+            <div className="bg-card p-4 rounded-md border mb-6 animate-in fade-in duration-300">
+              <h3 className="font-medium mb-4">Add New Item</h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="item-name">Item Name</Label>
+                    <Input 
+                      id="item-name"
+                      value={newItem.name}
+                      onChange={e => setNewItem({...newItem, name: e.target.value})}
+                      placeholder="e.g. Baby Monitor"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="item-price">Price ($)</Label>
+                    <Input 
+                      id="item-price"
+                      value={newItem.price}
+                      onChange={e => setNewItem({...newItem, price: e.target.value})}
+                      placeholder="e.g. 49.99"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="item-priority">Priority</Label>
+                    <Select
+                      value={newItem.priority}
+                      onValueChange={value => setNewItem({...newItem, priority: value})}
+                    >
+                      <SelectTrigger id="item-priority">
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Essential">Essential</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="Low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="item-category">Category</Label>
+                    <Select
+                      value={newItem.category}
+                      onValueChange={value => setNewItem({...newItem, category: value})}
+                    >
+                      <SelectTrigger id="item-category">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Nursery">Nursery</SelectItem>
+                        <SelectItem value="Feeding">Feeding</SelectItem>
+                        <SelectItem value="Diapering">Diapering</SelectItem>
+                        <SelectItem value="Clothing">Clothing</SelectItem>
+                        <SelectItem value="Safety">Safety</SelectItem>
+                        <SelectItem value="Travel">Travel</SelectItem>
+                        <SelectItem value="Toys">Toys</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button onClick={handleAddItem}>
+                    Add to Registry
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <Tabs defaultValue="needed" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="needed">Needed</TabsTrigger>
+              <TabsTrigger value="received">Received</TabsTrigger>
+            </TabsList>
+            <TabsContent value="needed" className="mt-4">
+              {renderItems('Needed')}
+            </TabsContent>
+            <TabsContent value="received" className="mt-4">
+              {renderItems('Received')}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Payment Links</CardTitle>
+              <CardDescription>Add your Venmo or Cash App details</CardDescription>
+            </div>
+            <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">Edit Links</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Payment Links</DialogTitle>
+                  <DialogDescription>
+                    Add your payment details to make it easy for friends and family to send gifts.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="venmo">Venmo Username</Label>
+                    <Input
+                      id="venmo"
+                      value={venmoUsername}
+                      onChange={(e) => setVenmoUsername(e.target.value)}
+                      placeholder="@username"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Include the @ symbol (e.g. @johndoe)
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cashapp">Cash App Username</Label>
+                    <Input
+                      id="cashapp"
+                      value={cashAppUsername}
+                      onChange={(e) => setCashAppUsername(e.target.value)}
+                      placeholder="username (without $)"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter just the username without the $ symbol
+                    </p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleSavePaymentLinks}>Save Links</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {renderPaymentLinks()}
+        </CardContent>
+      </Card>
     </div>
   );
 };

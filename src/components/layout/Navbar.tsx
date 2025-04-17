@@ -1,19 +1,32 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Baby, CalendarCheck, Utensils, BookOpen, ShoppingBag, Smile } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Baby, CalendarCheck, Utensils, BookOpen, ShoppingBag, Smile, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { ThemeToggle } from '../theme/theme-toggle';
+import { useUser } from '@/contexts/UserContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const { toast } = useToast();
+  const { user, logout } = useUser();
+  const navigate = useNavigate();
   
-  const handleAccountClick = () => {
+  const handleLogout = () => {
+    logout();
     toast({
-      title: "Coming Soon!",
-      description: "User account functionality will be added in the next update.",
+      title: "Logged out",
+      description: "You have been successfully logged out.",
     });
+    navigate('/');
   };
 
   return (
@@ -27,9 +40,32 @@ const Navbar = () => {
           
           <div className="flex items-center space-x-1">
             <ThemeToggle />
-            <Button onClick={handleAccountClick} variant="ghost" size="sm" className="text-muted-foreground">
-              Sign In
-            </Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-muted-foreground">
+                    <User className="mr-1 h-4 w-4" /> 
+                    {user.name}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuItem disabled>Profile</DropdownMenuItem>
+                  <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/auth">
+                <Button variant="ghost" size="sm" className="text-muted-foreground">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
         
