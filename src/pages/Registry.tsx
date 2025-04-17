@@ -2,18 +2,18 @@
 import React from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import PregnancyTracker from '@/components/tracker/PregnancyTracker';
+import RegistryManager from '@/components/registry/RegistryManager';
 
-const Index = () => {
+const Registry = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow app-container py-4">
-        <PregnancyTracker />
+        <RegistryManager />
       </main>
       <Footer />
     </div>
   );
 };
 
-export default Index;
+export default Registry;
