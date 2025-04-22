@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertCircle, ExternalLink, Link as LinkIcon } from "lucide-react";
+import { AlertCircle, ExternalLink, Link as LinkIcon, WalletIcon } from "lucide-react";
 import { Link } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -57,6 +56,7 @@ const defaultItems = [
 type PaymentLinks = {
   venmo?: string;
   cashApp?: string;
+  ethAddress?: string;
 };
 
 const RegistryManager = () => {
@@ -70,8 +70,8 @@ const RegistryManager = () => {
   const [paymentLinks, setPaymentLinks] = useState<PaymentLinks>({});
   const [venmoUsername, setVenmoUsername] = useState("");
   const [cashAppUsername, setCashAppUsername] = useState("");
-  
-  // Load saved registry data
+  const [ethAddress, setEthAddress] = useState("");
+
   useEffect(() => {
     if (user) {
       const savedItems = localStorage.getItem(`registry-items-${user.email}`);
@@ -91,6 +91,7 @@ const RegistryManager = () => {
           setPaymentLinks(links);
           setVenmoUsername(links.venmo || "");
           setCashAppUsername(links.cashApp || "");
+          setEthAddress(links.ethAddress || "");
         } catch (error) {
           console.error('Error parsing payment links', error);
         }
@@ -98,7 +99,6 @@ const RegistryManager = () => {
     }
   }, [user]);
   
-  // Save registry items when they change
   useEffect(() => {
     if (user) {
       localStorage.setItem(`registry-items-${user.email}`, JSON.stringify(items));
@@ -145,7 +145,6 @@ const RegistryManager = () => {
   };
 
   const handleSavePaymentLinks = () => {
-    // Validate Venmo username if provided
     if (venmoUsername && !venmoUsername.startsWith('@')) {
       toast({
         title: "Invalid Venmo username",
@@ -155,10 +154,20 @@ const RegistryManager = () => {
       return;
     }
     
+    if (ethAddress && (!ethAddress.startsWith('0x') || ethAddress.length !== 42)) {
+      toast({
+        title: "Invalid ETH address",
+        description: "Please enter a valid Ethereum address",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const links: PaymentLinks = {};
     
     if (venmoUsername) links.venmo = venmoUsername;
     if (cashAppUsername) links.cashApp = cashAppUsername;
+    if (ethAddress) links.ethAddress = ethAddress;
     
     setPaymentLinks(links);
     
@@ -245,10 +254,10 @@ const RegistryManager = () => {
   };
 
   const renderPaymentLinks = () => {
-    if (!paymentLinks.venmo && !paymentLinks.cashApp) {
+    if (!paymentLinks.venmo && !paymentLinks.cashApp && !paymentLinks.ethAddress) {
       return (
         <p className="text-sm text-muted-foreground">
-          No payment links have been added. Click the button below to add your Venmo or Cash App info.
+          No payment links have been added. Click the button below to add your payment information.
         </p>
       );
     }
@@ -283,6 +292,15 @@ const RegistryManager = () => {
               ${paymentLinks.cashApp}
               <ExternalLink className="h-3 w-3" />
             </a>
+          </div>
+        )}
+        {paymentLinks.ethAddress && (
+          <div className="flex items-center gap-2">
+            <WalletIcon className="h-4 w-4 text-dadblue" />
+            <span>ETH: </span>
+            <span className="text-dadblue">
+              {paymentLinks.ethAddress}
+            </span>
           </div>
         )}
       </div>
@@ -459,6 +477,18 @@ const RegistryManager = () => {
                     />
                     <p className="text-xs text-muted-foreground">
                       Enter just the username without the $ symbol
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="eth">ETH Address</Label>
+                    <Input
+                      id="eth"
+                      value={ethAddress}
+                      onChange={(e) => setEthAddress(e.target.value)}
+                      placeholder="0x..."
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter your Ethereum wallet address starting with 0x
                     </p>
                   </div>
                 </div>
