@@ -32,18 +32,20 @@ export default async function handler(req: Request, res: Response) {
     let buttonIndex = 0;
     
     if (req.method === 'POST') {
-      // Try to extract untrustedData, with fallbacks for different formats
+      // Try different possible request formats that Farcaster might use
       const { untrustedData } = req.body || {};
       
-      if (untrustedData) {
-        buttonIndex = untrustedData.buttonIndex || 0;
+      if (untrustedData && untrustedData.buttonIndex !== undefined) {
+        buttonIndex = untrustedData.buttonIndex;
         console.log('Button index from untrustedData:', buttonIndex);
       } else if (req.body && req.body.buttonIndex !== undefined) {
-        // Some Frame clients might send buttonIndex directly
         buttonIndex = req.body.buttonIndex;
         console.log('Button index from body:', buttonIndex);
+      } else if (req.body && req.body.data && req.body.data.buttonIndex !== undefined) {
+        buttonIndex = req.body.data.buttonIndex;
+        console.log('Button index from body.data:', buttonIndex);
       } else {
-        console.log('No button data found in request:', req.body);
+        console.log('No button data found in request, using default buttonIndex 0. Request body:', req.body);
       }
     }
 
@@ -60,7 +62,7 @@ export default async function handler(req: Request, res: Response) {
             {
               label: 'Visit DadPrep',
               action: 'link',
-              target: 'https://dadprep.lovable.dev'
+              target: 'https://dad-prep-baby-guide.lovable.app'
             }
           ],
         }
