@@ -11,6 +11,7 @@ import Names from "./pages/Names";
 import Registry from "./pages/Registry";
 import DadJokes from "./pages/DadJokes";
 import Auth from "./pages/Auth";
+import FrameApi from "./pages/FrameApi";
 import NotFound from "./pages/NotFound";
 import { UserProvider } from "./contexts/UserContext";
 
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/registry" element={<Registry />} />
               <Route path="/dad-jokes" element={<DadJokes />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/api/frame" element={<FrameApi />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
