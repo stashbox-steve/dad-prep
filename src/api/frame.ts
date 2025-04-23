@@ -15,7 +15,7 @@ export default async function handler(req: Request, res: Response) {
   // Only allow POST and GET methods
   if (req.method !== 'POST' && req.method !== 'GET') {
     console.log(`Invalid method: ${req.method}`);
-    return res.status(405).json({ 
+    return res.status(200).json({ 
       frames: {
         version: 'vNext',
         image: 'https://lovable.dev/opengraph-image-p98pqg.png',
@@ -26,13 +26,13 @@ export default async function handler(req: Request, res: Response) {
   }
 
   try {
-    console.log('Frame request received:', req.method, JSON.stringify(req.body));
+    console.log('Frame request received:', req.method, JSON.stringify(req.body || {}));
     
     // Extract data based on request method
     let buttonIndex = 0;
     
     if (req.method === 'POST') {
-      // Try different possible request formats that Farcaster might use
+      // Try multiple possible request formats from Farcaster
       const { untrustedData } = req.body || {};
       
       if (untrustedData && untrustedData.buttonIndex !== undefined) {
@@ -44,8 +44,11 @@ export default async function handler(req: Request, res: Response) {
       } else if (req.body && req.body.data && req.body.data.buttonIndex !== undefined) {
         buttonIndex = req.body.data.buttonIndex;
         console.log('Button index from body.data:', buttonIndex);
+      } else if (req.query && req.query.buttonIndex !== undefined) {
+        buttonIndex = Number(req.query.buttonIndex);
+        console.log('Button index from query:', buttonIndex);
       } else {
-        console.log('No button data found in request, using default buttonIndex 0. Request body:', req.body);
+        console.log('No button data found in request. Request body:', JSON.stringify(req.body || {}), 'Query:', JSON.stringify(req.query || {}));
       }
     }
 
