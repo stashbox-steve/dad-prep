@@ -2,54 +2,43 @@
 import { Request, Response } from 'express';
 
 export default async function handler(req: Request, res: Response) {
+  console.log('Frame handler called with method:', req.method);
+  console.log('Request headers:', req.headers);
+  
   // Set CORS headers to allow Farcaster to access this endpoint
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
   
   // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS preflight request');
     return res.status(200).end();
   }
   
-  // Only allow POST and GET methods
-  if (req.method !== 'POST' && req.method !== 'GET') {
-    console.log(`Invalid method: ${req.method}`);
-    return res.status(200).json({ 
-      frames: {
-        version: 'vNext',
-        image: 'https://lovable.dev/opengraph-image-p98pqg.png',
-        title: 'DadPrep - Method Not Allowed',
-        buttons: [{ label: 'Try Again', action: 'post' }]
-      }
-    });
-  }
-
+  // Make the handler more permissive - accept any method for testing
+  console.log(`Request method: ${req.method}`);
+  
   try {
-    console.log('Frame request received:', req.method, JSON.stringify(req.body || {}));
+    console.log('Request body:', JSON.stringify(req.body || {}));
+    console.log('Request query:', JSON.stringify(req.query || {}));
     
-    // Extract data based on request method
+    // Extract button data from various possible formats
     let buttonIndex = 0;
     
     if (req.method === 'POST') {
-      // Try multiple possible request formats from Farcaster
-      const { untrustedData } = req.body || {};
-      
-      if (untrustedData && untrustedData.buttonIndex !== undefined) {
-        buttonIndex = untrustedData.buttonIndex;
-        console.log('Button index from untrustedData:', buttonIndex);
-      } else if (req.body && req.body.buttonIndex !== undefined) {
+      // Try all known Farcaster request formats
+      if (req.body?.untrustedData?.buttonIndex !== undefined) {
+        buttonIndex = req.body.untrustedData.buttonIndex;
+      } else if (req.body?.buttonIndex !== undefined) {
         buttonIndex = req.body.buttonIndex;
-        console.log('Button index from body:', buttonIndex);
-      } else if (req.body && req.body.data && req.body.data.buttonIndex !== undefined) {
+      } else if (req.body?.data?.buttonIndex !== undefined) {
         buttonIndex = req.body.data.buttonIndex;
-        console.log('Button index from body.data:', buttonIndex);
-      } else if (req.query && req.query.buttonIndex !== undefined) {
+      } else if (req.query?.buttonIndex !== undefined) {
         buttonIndex = Number(req.query.buttonIndex);
-        console.log('Button index from query:', buttonIndex);
-      } else {
-        console.log('No button data found in request. Request body:', JSON.stringify(req.body || {}), 'Query:', JSON.stringify(req.query || {}));
       }
+      
+      console.log('Extracted buttonIndex:', buttonIndex);
     }
 
     // Handle the "Track Pregnancy" button click
