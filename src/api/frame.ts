@@ -19,7 +19,7 @@ export default async function handler(req: Request, res: Response) {
     return res.status(200).json({
       frames: {
         version: 'vNext',
-        image: 'https://lovable.dev/opengraph-image-p98pqg.png',
+        image: 'https://images.unsplash.com/photo-1535268647677-300dbf3d78d1', // Grey tabby kitten image as baby placeholder
         title: 'DadPrep - The Ultimate Baby Guide for Fathers',
         buttons: [
           {
@@ -39,3 +39,4 @@ export default async function handler(req: Request, res: Response) {
     });
   }
 }
+
