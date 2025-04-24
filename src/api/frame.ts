@@ -15,11 +15,11 @@ export default async function handler(req: Request, res: Response) {
   }
   
   try {
-    // Default response for initial frame load
+    // Update image to use the DadPrep logo
     return res.status(200).json({
       frames: {
         version: 'vNext',
-        image: 'https://images.unsplash.com/photo-1535268647677-300dbf3d78d1', // Grey tabby kitten image as baby placeholder
+        image: 'https://dad-prep-baby-guide.lovable.app/lovable-uploads/04181d7a-dfe2-4343-a71a-f3499f896bf4.png',
         title: 'DadPrep - The Ultimate Baby Guide for Fathers',
         buttons: [
           {
