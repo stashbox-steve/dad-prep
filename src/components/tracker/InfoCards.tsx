@@ -10,7 +10,7 @@ interface InfoCardsProps {
 }
 
 const InfoCards: React.FC<InfoCardsProps> = ({ currentWeek, babySizeComparisons }) => {
-  const babySize = babySizeComparisons[currentWeek as keyof typeof babySizeComparisons] || 
+  const babySize = babySizeComparisons[currentWeek] || 
     { item: "Unknown size", image: "👶" };
     
   return (
