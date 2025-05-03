@@ -24,6 +24,18 @@ const FrameApi = () => {
         <p>Accepts: POST, GET, OPTIONS</p>
         <p>Returns: Farcaster Frame compatible responses</p>
       </div>
+      
+      <div className="bg-white p-4 rounded shadow mt-4">
+        <h2 className="text-xl font-semibold mb-2">Base Wallet Compatible</h2>
+        <p className="mb-2">This app is optimized for Base Wallet Mini Apps.</p>
+        <p>Use Base Wallet to access additional features like:</p>
+        <ul className="list-disc pl-5 mt-2">
+          <li>Easy onboarding</li>
+          <li>Social connections</li>
+          <li>In-wallet experience</li>
+          <li>Secure authentication</li>
+        </ul>
+      </div>
     </div>
   );
 };

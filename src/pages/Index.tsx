@@ -20,9 +20,17 @@ const Index = () => {
             <p className="text-muted-foreground mb-4">
               Sign up to save your pregnancy journey, track favorite names, and more.
             </p>
-            <Link to="/auth">
-              <Button>Get Started</Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Link to="/auth">
+                <Button>Get Started</Button>
+              </Link>
+              <Button variant="outline">
+                Connect Base Wallet
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              DadPrep is optimized for Base Wallet Mini Apps
+            </p>
           </div>
         )}
         <PregnancyTracker />
