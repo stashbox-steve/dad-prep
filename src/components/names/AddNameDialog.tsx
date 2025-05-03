@@ -5,31 +5,45 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Plus } from 'lucide-react';
-import { PersonalBabyName } from '@/types/babyNames';
-import { useUser } from '@/contexts/UserContext';
+import { BabyName } from '@/types/babyNames';
 
 interface AddNameDialogProps {
-  onAddName: (nameData: PersonalBabyName) => void;
-  walletAddress?: string;
+  onAddName: (nameData: BabyName) => void;
 }
 
-const AddNameDialog = ({ onAddName, walletAddress }: AddNameDialogProps) => {
+const AddNameDialog = ({ onAddName }: AddNameDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [newName, setNewName] = useState<Partial<PersonalBabyName>>({});
-  const { user } = useUser();
+  const [newName, setNewName] = useState<Partial<BabyName>>({
+    name: '',
+    meaning: '',
+    origin: '',
+    gender: 'neutral',
+    notes: ''
+  });
 
   const handleSubmit = () => {
-    if (!user && !walletAddress) return;
+    if (!newName.name) {
+      return;
+    }
     
-    const nameToAdd: PersonalBabyName = {
-      ...newName as PersonalBabyName,
-      user_id: user?.email || 'anonymous',
-      wallet_address: walletAddress,
+    const nameToAdd: BabyName = {
+      ...newName as BabyName,
+      name: newName.name || '',
+      meaning: newName.meaning || '',
+      origin: newName.origin || '',
+      gender: newName.gender || 'neutral',
     };
     
     onAddName(nameToAdd);
-    setNewName({});
+    setNewName({
+      name: '',
+      meaning: '',
+      origin: '',
+      gender: 'neutral',
+      notes: ''
+    });
     setIsOpen(false);
   };
 
@@ -42,7 +56,7 @@ const AddNameDialog = ({ onAddName, walletAddress }: AddNameDialogProps) => {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add a Personal Baby Name</DialogTitle>
+          <DialogTitle>Add a Baby Name</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
@@ -90,18 +104,13 @@ const AddNameDialog = ({ onAddName, walletAddress }: AddNameDialogProps) => {
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="notes" className="text-right">Notes</Label>
-            <Input 
+            <Textarea
               id="notes" 
               value={newName.notes || ''} 
               onChange={(e) => setNewName({...newName, notes: e.target.value})} 
               className="col-span-3" 
             />
           </div>
-          {walletAddress && (
-            <div className="text-xs text-muted-foreground">
-              This name will be linked to your Base Wallet.
-            </div>
-          )}
           <Button onClick={handleSubmit} className="w-full">Save Name</Button>
         </div>
       </DialogContent>
