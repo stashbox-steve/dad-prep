@@ -20,6 +20,7 @@ interface UserContextType {
   updatePrivacySettings: (settings: { showRegistry?: boolean; showPaymentLinks?: boolean }) => void;
 }
 
+// Create context with a default undefined value
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -105,8 +106,18 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('user');
   };
 
+  // Create the context value object
+  const contextValue: UserContextType = {
+    user,
+    isLoading,
+    login,
+    logout,
+    updateUser,
+    updatePrivacySettings
+  };
+
   return (
-    <UserContext.Provider value={{ user, isLoading, login, logout, updateUser, updatePrivacySettings }}>
+    <UserContext.Provider value={contextValue}>
       {children}
     </UserContext.Provider>
   );
