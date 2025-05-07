@@ -6,7 +6,7 @@ import Footer from '@/components/layout/Footer';
 import ProfileViewer from '@/components/profile/ProfileViewer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 interface ProfileData {
   name: string;
@@ -31,48 +31,57 @@ const PublicProfile = () => {
   const [registryItems, setRegistryItems] = useState([]);
   const [paymentLinks, setPaymentLinks] = useState<PaymentLinks>({});
   const [error, setError] = useState('');
+  const { toast } = useToast();
 
   useEffect(() => {
+    console.log("Looking for profile with slug:", slug);
+    
     const findProfileBySlug = () => {
-      // In a real app, this would be an API call
-      // For our localStorage implementation, we need to check all users
-      const allUsers = Object.keys(localStorage)
-        .filter(key => key.startsWith('user'))
-        .map(key => {
-          try {
-            return JSON.parse(localStorage.getItem(key) || '');
-          } catch (e) {
-            return null;
-          }
-        })
-        .filter(Boolean);
-
-      const foundUser = allUsers.find(user => user.profileSlug === slug);
+      // Look directly for the user in localStorage
+      const storedUser = localStorage.getItem('user');
       
-      if (foundUser) {
-        setProfileData(foundUser);
-        
-        // Get registry items
-        const savedItems = localStorage.getItem(`registry-items-${foundUser.email}`);
-        if (savedItems) {
-          try {
-            setRegistryItems(JSON.parse(savedItems));
-          } catch (error) {
-            console.error('Error parsing saved items', error);
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          console.log("Found user in localStorage:", parsedUser);
+          
+          if (parsedUser.profileSlug === slug) {
+            console.log("Profile slug matches:", parsedUser.profileSlug);
+            setProfileData(parsedUser);
+            
+            // Get registry items
+            const savedItems = localStorage.getItem(`registry-items-${parsedUser.email}`);
+            if (savedItems) {
+              try {
+                setRegistryItems(JSON.parse(savedItems));
+              } catch (error) {
+                console.error('Error parsing saved items', error);
+              }
+            }
+            
+            // Get payment links
+            const savedLinks = localStorage.getItem(`payment-links-${parsedUser.email}`);
+            if (savedLinks) {
+              try {
+                setPaymentLinks(JSON.parse(savedLinks));
+              } catch (error) {
+                console.error('Error parsing payment links', error);
+              }
+            }
+          } else {
+            setError('Profile not found');
+            toast({
+              variant: "destructive",
+              title: "Profile not found",
+              description: "The profile you're looking for does not exist.",
+            });
           }
-        }
-        
-        // Get payment links
-        const savedLinks = localStorage.getItem(`payment-links-${foundUser.email}`);
-        if (savedLinks) {
-          try {
-            setPaymentLinks(JSON.parse(savedLinks));
-          } catch (error) {
-            console.error('Error parsing payment links', error);
-          }
+        } catch (error) {
+          console.error('Error parsing user data', error);
+          setError('Error loading profile');
         }
       } else {
-        setError('Profile not found');
+        setError('No user profiles found');
       }
       
       setIsLoading(false);
@@ -84,7 +93,7 @@ const PublicProfile = () => {
       setError('Invalid profile URL');
       setIsLoading(false);
     }
-  }, [slug]);
+  }, [slug, toast]);
 
   if (isLoading) {
     return (

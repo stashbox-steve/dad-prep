@@ -10,24 +10,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/components/ui/use-toast';
-
-// Mock authentication - in a real app, this would connect to Supabase
-const mockAuth = {
-  signIn: async (email: string, password: string): Promise<boolean> => {
-    // In production, replace with actual Supabase auth
-    console.log('Sign in attempt:', email);
-    // Simulate successful login for demo purposes
-    localStorage.setItem('user', JSON.stringify({ email, name: email.split('@')[0] }));
-    return true;
-  },
-  signUp: async (email: string, password: string): Promise<boolean> => {
-    // In production, replace with actual Supabase auth
-    console.log('Sign up attempt:', email);
-    // Simulate successful registration for demo purposes
-    localStorage.setItem('user', JSON.stringify({ email, name: email.split('@')[0] }));
-    return true;
-  },
-};
+import { useUser } from '@/contexts/UserContext';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -38,6 +21,7 @@ const AuthForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { login } = useUser();
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -47,24 +31,42 @@ const AuthForm = () => {
     },
   });
 
+  const generateProfileSlug = (name: string): string => {
+    // Create a URL-friendly slug from the user's name plus a random string for uniqueness
+    const baseSlug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    return `${baseSlug}-${randomStr}`;
+  };
+
   const onSubmit = async (formData: z.infer<typeof loginSchema>, isSignUp: boolean) => {
     setIsLoading(true);
     try {
-      if (isSignUp) {
-        await mockAuth.signUp(formData.email, formData.password);
-        toast({
-          title: "Account created!",
-          description: "Welcome to DadPrep! Your account has been created.",
-        });
-      } else {
-        await mockAuth.signIn(formData.email, formData.password);
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        });
-      }
+      // Create a proper user object with all required fields
+      const username = formData.email.split('@')[0];
+      const userData = {
+        email: formData.email,
+        name: username,
+        privacy: {
+          showRegistry: false,
+          showPaymentLinks: false
+        },
+        profileSlug: generateProfileSlug(username)
+      };
+
+      // Use the login function from context instead of direct localStorage manipulation
+      login(userData);
+      
+      toast({
+        title: isSignUp ? "Account created!" : "Welcome back!",
+        description: isSignUp 
+          ? "Welcome to DadPrep! Your account has been created."
+          : "You have successfully signed in.",
+      });
+      
+      console.log("User logged in with data:", userData);
       navigate('/');
     } catch (error) {
+      console.error("Auth error:", error);
       toast({
         variant: "destructive",
         title: "Authentication failed",
